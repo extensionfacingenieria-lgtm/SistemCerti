@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile or user-specific safe client data",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "User's unique Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of profile creation"
+        }
+      },
+      "required": ["id", "email", "createdAt"]
+    },
+    "Certificate": {
+      "title": "Certificate",
+      "description": "Simplified Certificate schema linking document numbers with PDFs",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier"
+        },
+        "documentNumber": {
+          "type": "string",
+          "description": "The national ID or document of the student"
+        },
+        "pdfData": {
+          "type": "string",
+          "description": "Base64 encoded PDF string"
+        },
+        "pdfFileName": {
+          "type": "string",
+          "description": "Physical filename of the PDF"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        }
+      },
+      "required": ["id", "documentNumber", "pdfData", "pdfFileName", "createdAt"]
+    },
+    "Stats": {
+      "title": "Stats",
+      "description": "Global statistics",
+      "type": "object",
+      "properties": {
+        "visitCount": {
+          "type": "integer",
+          "description": "Unique site visits count"
+        }
+      },
+      "required": ["visitCount"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and private documents owned by the user"
+    },
+    "certificates/{certificateId}": {
+      "schema": "Certificate",
+      "description": "Collection of all student certificates"
+    },
+    "stats/global": {
+      "schema": "Stats",
+      "description": "Global application stats document"
+    }
+  }
+}

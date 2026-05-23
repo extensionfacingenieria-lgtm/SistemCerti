@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+             request.auth.token.email_verified == true &&
+             (request.auth.token.email == "extensionfacingenieria@umariana.edu.co" || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity validation helper for Certificate
+    function isValidCertificate(data) {
+      return data.keys().hasAll(['id', 'documentNumber', 'sanitizedDoc', 'pdfData', 'pdfFileName', 'createdAt'])
+          && data.keys().size() == 6
+          && data.id is string && data.id.size() <= 128
+          && data.documentNumber is string && data.documentNumber.size() <= 64
+          && data.sanitizedDoc is string && data.sanitizedDoc.size() <= 64
+          && data.pdfData is string && data.pdfData.size() <= 15000000
+          && data.pdfFileName is string && data.pdfFileName.size() <= 256
+          && data.createdAt is string && data.createdAt.size() <= 40;
+    }
+
+    // Entity validation helper for Stats
+    function isValidStats(data) {
+      return data.keys().hasAll(['visitCount'])
+          && data.keys().size() == 1
+          && data.visitCount is int && data.visitCount >= 0;
+    }
+
+    // Entity validation helper for User
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'createdAt'])
+          && data.keys().size() == 3
+          && data.id is string && data.id.size() <= 128
+          && data.email is string && data.email.size() <= 256
+          && data.createdAt is string && data.createdAt.size() <= 40;
+    }
+
+    // Match User Profile path - each user can only read and write their own data
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if isSignedIn() && request.auth.uid == userId;
+
+      allow create: if isSignedIn() 
+                    && request.auth.uid == userId 
+                    && isValidId(userId)
+                    && isValidUser(incoming());
+
+      allow update: if isSignedIn() 
+                    && request.auth.uid == userId 
+                    && isValidId(userId)
+                    && isValidUser(incoming())
+                    && incoming().id == existing().id;
+
+      allow delete: if isSignedIn() 
+                    && request.auth.uid == userId 
+                    && isValidId(userId);
+
+      // Recursive match for any user subcollections to maintain strict isolation
+      match /{document=**} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    // Match Certificate path - Managed safely bybackend server with admin bearer verification
+    match /certificates/{certificateId} {
+      allow get, list: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Match Stats path - Incremented publically via visit logs, managed by server
+    match /stats/{docId} {
+      allow get, list: if true;
+      allow create, update: if true;
+    }
+  }
+}

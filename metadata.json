@@ -1,0 +1,6 @@
+{
+  "name": "SistemCerti",
+  "description": "Repositorio y descarga de certificados de cursos mediante número de documento sin registro.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
